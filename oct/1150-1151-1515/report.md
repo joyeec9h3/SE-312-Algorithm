@@ -1,4 +1,9 @@
-##原题中文大意
+# 1151 魔板 B 解题报告
+
+12330402 · 张秋怡 · 12 级计应 2 班
+
+## 原题中文大意
+
 有一个 2 &times; 4 的魔板（实际上可以用1 &times; 8 的一维数组表示），初始状态
 
 	1 2 3 4
@@ -16,7 +21,7 @@
 		4 1 2 3
 		5 8 7 6
 
-* C： 中间 4 格逆时针旋转
+* C： 中间 4 格顺时针旋转
 
 		1 7 2 4
 		8 6 3 5
@@ -28,7 +33,8 @@
 
 当 n 为 -1 时，输入结束
 
-##算法及数据结构
+## 算法及数据结构
+
 本题最明显的解法是通过在状态空间中进行搜索求解，初步考虑使用 BFS 或者 DFS，而根据题意，使用 DFS 可能会陷入环路，且很可能在无解的分支中大量浪费时间。而使用 BFS 可以得到达到目标状态的最短路径，因为 BFS 中短的路径一定先于长的路径被搜索，若最短路径长度为 n ，那么所有长度为 m > n 的路径一定在找到最短路径前后才能被搜索，而只要在找到最短路后便退出，则不会浪费时间继续搜索更长的路径。因此当使用 BFS 的时候，我们可以保证找到的是最短路径，且中间不会有多余的步骤（即环路，因为包含环路的路径去掉环路后长度必然更小，因此更早被搜索到），需要搜索的状态数目也不会太多。
 
 为了记录状态是否已经被搜索，需要一个支持快速查找的数据结构，初步考虑，可以使用：
@@ -54,7 +60,8 @@
 
 综上所述，这题我们使用 BFS 进行搜索，使用哈希表存储搜索过的状态，用每个状态各数字排列的 16 进制表示做哈希函数，用康托展开压缩哈希表的大小。
 
-##解题思路
+## 解题思路
+
 从初始状态开始进行 BFS，先将初始状态入列，接着对列中的每一个状态，分别进行 A, B, C 操作，将每个操作的结果及其操作路径依次入列，一直到找到目标状态，或者操作路径长度已经超过 n 为止。
 
 这里有两个需要注意的地方：
@@ -62,11 +69,13 @@
 1. 极端情况为目标状态即初始状态，因此在初始状态入列后，需要先判断一次其是否为目标状态，若是，直接输出并返回
 2. 可以在操作产生新状态后，立刻判断新状态是否为目标状态，如果是，输出并返回。此时还需要注意额外判断新状态的路径长度是否超过 n。
 
-##逐步求精
+## 逐步求精
+
 为了方便阅读，我们按照 POSIX 标准定义
 
-	typedef unsigned int uint32_t;
-
+```cpp
+typedef unsigned int uint32_t;
+```
 * 需要一个状态节点数据结构`Node`，其中包括
 	* `uint32_t state` 表示状态的哈希
 	* `string path` 表示从目标状态到达当前状态所需的操作步骤
@@ -83,155 +92,182 @@
 * 需要 BFS 函数 `bfs`，接收初始状态，目标状态，最大路径长度，进行搜索并输出对应结果
 	* `void bfs(Node begin, Node end, int n)`
 * `main`函数进行输入，调用 bfs，初始化变量等操作
-##注释清单
 
+## 注释清单
 
-定义状态节点数据结构：
+```cpp
+#define JDEBUG
+#include <cstdio>
+#include <queue>
+#include <string>
+#include <cstring>
 
-	class Node {  // Node for search
-	 public:
-	  uint32_t state;  // binary encoded state, 4 bits for each square
-	  string path;  // path to get to this node
-	  Node(uint32_t s = 0, string p = ""): state(s), path(p) {}
-	};
+using std::string;
+using std::queue;
+typedef unsigned int uint32_t;  // POSIX 32-bit unsigned integer
 
-三个操作
+#define ONE 4    // number of bits for one square
+#define THREE 12  // three square
+#define FOUR 16   // four square
 
-	// switch two rows
-	uint32_t A(uint32_t n) {
-	  return  ((n >> FOUR)      // shift the upper 4 groups down
-	                |            // merge
-	           ((n & 0x0000ffff) << FOUR));  // shift the lower 4 squares up
-	}
-	
-	// circularly shift each row to the left
-	uint32_t B(uint32_t n) {
-	  // shift last three square in each row to the left
-	  return  (((n & 0xfff0fff0) >> ONE)
-	                   |   // merge
-	           ((n & 0x000f000f) << THREE));
-	  // shift first squares in each row to the beginning
-	}
-	
-	// rotate the four squares in the center clockwise
-	uint32_t C(uint32_t n) {
-	  return  (n & 0xf00ff00f)  // mask out corners
-	          | ((n & 0x000000f0) << ONE)  // shift A7 left
-	          | (n & 0x00000f00) << FOUR  // shift A6 UP
-	          | (n & 0x0f000000) >> ONE   // shift A2 right
-	          | (n & 0x00f00000) >> FOUR;  // shift A3 down
-	}
+class Node {  // Node for search
+ public:
+  uint32_t state;  // binary encoded state, 4 bits for each square
+  string path;  // path to get to this node
+  Node(uint32_t s = 0, string p = ""): state(s), path(p) {}
+};
 
-康托展开
+// switch two rows
+uint32_t A(uint32_t n) {
+  return  ((n >> FOUR)      // shift the upper 4 groups down
+                |            // merge
+           ((n & 0x0000ffff) << FOUR));  // shift the lower 4 squares up
+}
 
-	// convert a 32-bit state to an integer no larger than 8!
-	uint32_t cantor(uint32_t  state) {
-	  uint32_t a[8], x = 0,
-	           fac[8] = {0, 1, 2, 6, 24, 120, 720, 5040};  // fac[i] = i!
-	
-	  for (int i = 0; i < 8; ++i)
-	    a[7 - i] = ( state >> (4 * i)) & 0xf;  // a[i] = board[i]
-	
-	  for (int i = 0; i < 8; ++i) {
-	    int count = 0; // number of digits smaller than a[i]
-	    for (int j = i + 1; j < 8; ++j)
-	      if (a[j] < a[i])
-	        ++count;
-	    x += fac[7 - i] * count;
-	  }
-	  return x;
-	}
+// circularly shift each row to the left
+uint32_t B(uint32_t n) {
+  // shift last three square in each row to the left
+  return  (((n & 0xfff0fff0) >> ONE)
+                   |   // merge
+           ((n & 0x000f000f) << THREE));
+  // shift first squares in each row to the beginning
+}
 
-数组到哈希的转换函数
+// rotate the four squares in the center clockwise
+uint32_t C(uint32_t n) {
+  return  (n & 0xf00ff00f)  // mask out corners
+          | ((n & 0x000000f0) << ONE)  // shift A7 left
+          | (n & 0x00000f00) << FOUR  // shift A6 UP
+          | (n & 0x0f000000) >> ONE   // shift A2 right
+          | (n & 0x00f00000) >> FOUR;  // shift A3 down
+}
 
-	// convert the board state to binary code
-	uint32_t toBinary(int board[]) {
-	  uint32_t state = 0;
-	  for (int i = 0; i < 8; ++i)  // e.g. (A8 = board[7] - 1) << (ONE * 7)
-	    state |= (board[i]) << (ONE * (7 - i)); // e.g. 8 = 0b111
-	  return  state;
-	}
+// put A, B, C into an array so that they can be iterated
+uint32_t (*OP[3])(uint32_t) = {A, B, C};
+// the hash table, declared in global scope to put it on the heap
+bool visited[50000];  //8! = 40320
 
-为了方便，将三个操作放在一个函数指针数组里，易于遍历
+// convert a 32-bit state to an integer no larger than 8!
+uint32_t cantor(uint32_t  state) {
+  uint32_t a[8], x = 0,
+           fac[8] = {0, 1, 2, 6, 24, 120, 720, 5040};  // fac[i] = i!
 
-	// put A, B, C into an array so that they can be iterated
-	uint32_t (*OP[3])(uint32_t) = {A, B, C};
+  for (int i = 0; i < 8; ++i)
+    a[7 - i] = ( state >> (4 * i)) & 0xf;  // a[i] = board[i]
 
-哈希表
+  for (int i = 0; i < 8; ++i) {
+    int count = 0; // number of digits smaller than a[i]
+    for (int j = i + 1; j < 8; ++j)
+      if (a[j] < a[i])
+        ++count;
+    x += fac[7 - i] * count;
+  }
+  return x;
+}
 
-	// the hash table, declared in global scope to put it on the heap
-	bool visited[50000];  //8! = 40320
+// convert the board state to binary code
+uint32_t toBinary(int board[]) {
+  uint32_t state = 0;
+  for (int i = 0; i < 8; ++i)  // e.g. (A8 = board[7] - 1) << (ONE * 7)
+    state |= (board[i]) << (ONE * (7 - i)); // e.g. 8 = 0b111
+  return  state;
+}
 
-BFS 函数
+// search from begin to the end, until the path is longer than n
+// or the end is found
+void bfs(Node begin, Node end, int n) {
+  // initial state is the target state
+  if (begin.state == end.state) {
+    printf("0 \n");
+    return;
+  }
 
-	// search from begin to the end, until the path is longer than n
-	// or the end is found
-	void bfs(Node begin, Node end, int n) {
-	  // initial state is the target state
-	  if (begin.state == end.state) {
-	    printf("0 \n");
-	    return;
-	  }
-	
-	  queue<Node> q;
-	  q.push(begin);
-	  visited[cantor(begin.state)] = true;
-	
-	  while (!q.empty()) {
-	    Node head = q.front();
-	    q.pop();
-	
-	    if (head.path.length() > n) {
-	      printf("-1\n");
-	      return;
-	    }
-	
-	    for (int i = 0; i < 3; ++i) {
-	      uint32_t new_state = OP[i](head.state);
-	      int hash = cantor(new_state);
-	      if (!visited[hash]) {
-	        visited[hash] = true;
-	        string new_path = head.path + (char)('A' + i);
-	        Node new_node(new_state, new_path);
-	
-	        if (new_state == end.state && new_path.length() <= n) {  // found
-	          printf("%d %s\n", new_path.length(), new_path.c_str());
-	          return;
-	        }
-	
-	        q.push(new_node);
-	      }
-	    }
-	  }
-	}
+  queue<Node> q;
+  q.push(begin);
+  visited[cantor(begin.state)] = true;
 
-##测试数据
+  while (!q.empty()) {
+    Node head = q.front();
+    q.pop();
+
+    if (head.path.length() > n) {
+      printf("-1\n");
+      return;
+    }
+
+    for (int i = 0; i < 3; ++i) {
+      uint32_t new_state = OP[i](head.state);
+      int hash = cantor(new_state);
+      if (!visited[hash]) {
+        visited[hash] = true;
+        string new_path = head.path + (char)('A' + i);
+        Node new_node(new_state, new_path);
+
+        if (new_state == end.state && new_path.length() <= n) {  // found
+          printf("%d %s\n", new_path.length(), new_path.c_str());
+          return;
+        }
+
+        q.push(new_node);
+      }
+    }
+  }
+}
+
+int main(void) {
+#ifdef JDEBUG
+  freopen("test.in", "r", stdin);
+  freopen("test.out", "w", stdout);
+#endif
+  int n;
+  int board[8] = {1 , 2 , 3 , 4 ,
+                  8 , 7 , 6 , 5};
+  Node begin(toBinary(board));
+
+  scanf("%d", &n);
+  while (n != -1) {
+    for (int i = 0; i < 8; ++i)
+      scanf("%d", &(board[i]));
+
+    Node end(toBinary(board));
+    memset(visited, false, sizeof(visited));
+    bfs(begin, end, n);
+    scanf("%d", &n);
+  }
+
+  return 0;
+}
+```
+
+## 测试数据
+
 使用如下main函数生成可到达的状态
+```cpp
+int main(void) {
+  int n;
+  int board[8] = {1 , 2 , 3 , 4 ,
+                  8 , 7 , 6 , 5};
+  char buf[100];
 
-	int main(void) {
-	  int n;
-	  int board[8] = {1 , 2 , 3 , 4 ,
-	                  8 , 7 , 6 , 5};
-	  char buf[100];
-	
-	  scanf("%d", &n);
-	  while (n != -1) {
-	  	int x = toBinary(board);
+  scanf("%d", &n);
+  while (n != -1) {
+  	int x = toBinary(board);
 
-	    scanf("%s", buf);
-	    string ops(buf);
-	    for (int i = 0; i < ops.length(); ++i)
-	    	x = OP[ops[i] - 'A'](x);
+    scanf("%s", buf);
+    string ops(buf);
+    for (int i = 0; i < ops.length(); ++i)
+    	x = OP[ops[i] - 'A'](x);
 
-	   	printf("%d\n", ops.length());
-		for (int i = 1; i <= 8; ++i)
-			printf("%d%c", (x >> (ONE * (8 - i))) & 0xf, i % 4 == 0 ? '\n' : ' ');
+   	printf("%d\n", ops.length());
+	for (int i = 1; i <= 8; ++i)
+		printf("%d%c", (x >> (ONE * (8 - i))) & 0xf, i % 4 == 0 ? '\n' : ' ');
 
-	    scanf("%d", &n);
-	  }
-	
-	  return 0;
-	}
+    scanf("%d", &n);
+  }
+
+  return 0;
+}
+```
 
 测试数据
 
@@ -300,4 +336,6 @@ BFS 函数
 	4 BCAB
 	12 BCABCBCCBCBB
 
-##复杂度分析，优化与改进
+## 复杂度分析，优化与改进
+
+使用康托展开后，空间复杂度为常数，即 8!。最糟糕的情况下（无解），时间复杂度为 O( 3<sup>n</sup> )，但由于 A，B，C 的组合本身会产生非常多的环路，而此处使用哈希保存了访问过的状态以避免搜索环路，所以实际复杂度应当远远小于这个估计值。优化思路在上文中的“算法及数据结构”一节有描述。优化后在 sicily 上耗时	0.1s，内存 752KB。

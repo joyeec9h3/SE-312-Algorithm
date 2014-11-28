@@ -41,8 +41,8 @@ bool valid(Node node) {
 }
 
 
-bool dfs(Node node, int step) {
-  from[step] = board[node.x][node.y];
+bool dfs(Node start, int step) {
+  from[step] = board[start.x][start.y];
 
   if (step == SIZE - 1) {  // the tour is finished
     for (int i = 0; i < SIZE; i++)
@@ -55,7 +55,7 @@ bool dfs(Node node, int step) {
     // calculate the reachability of reachable nodes
     std::vector<Node> v;
     for (int i = 0; i < NEIGHBOR; i++) {
-      Node probe(node.x + dx[i], node.y + dy[i]);
+      Node probe(start.x + dx[i], start.y + dy[i]);
       if (valid(probe)) {  // for each valid neighbor `probe`
         // calculate the reachability for `probe`
         for (int j = 0; j < NEIGHBOR; j++) {
@@ -70,7 +70,7 @@ bool dfs(Node node, int step) {
     // sort the reachable nodes by their own reachability
     std::sort(v.begin(), v.end(), cmp);
 
-    // DFS, note `v` will be empty now if `node` is a dead end
+    // DFS, note `v` will be empty now if `start` is a dead end
     for (int i = 0; i < v.size(); i++) {
       visited[v[i].x][v[i].y] = true;  // check this one out
       if (dfs(v[i], step + 1)) return true;  // go deeper, found a route
@@ -94,14 +94,14 @@ int main(int argc, char *argv[]) {
       board[i][j] = square++;
 
   while (scanf("%d", &n) && n != -1) {
-    Node node((n - 1) / WIDTH, (n - 1) % WIDTH);
+    Node start((n - 1) / WIDTH, (n - 1) % WIDTH);
 
     // initialize
     memset(visited, false, sizeof(visited));
     memset(from, -1, sizeof(from));
 
-    visited[node.x][node.y] = true;
-    dfs(node, 0);
+    visited[start.x][start.y] = true;
+    dfs(start, 0);
   }
 
   return 0;

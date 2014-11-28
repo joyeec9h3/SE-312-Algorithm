@@ -1,5 +1,6 @@
-*.out
-*.exe
+*.pdf
 *~
+*.exe
 *.o
+*.out
 *.html

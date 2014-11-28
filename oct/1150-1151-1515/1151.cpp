@@ -130,7 +130,7 @@ int main(void) {
   while (n != -1) {
     for (int i = 0; i < 8; ++i)
       scanf("%d", &(board[i]));
-
+	int b = int(n); 
     Node end(toBinary(board));
     memset(visited, false, sizeof(visited));
     bfs(begin, end, n);

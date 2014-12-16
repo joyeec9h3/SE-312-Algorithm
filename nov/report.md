@@ -15,7 +15,7 @@
     49  50  51  52  53  54  55  56
     57  58  59  60  61  62  63  64
 
-输入有若干行。每行一个整数N(1 &leq; N &leq; 30)，表示马的起点。最后一行用 -1 表示结束，不用处理。
+输入有若干行。每行一个整数N(1 &#8804; N &#8804; 30)，表示马的起点。最后一行用 -1 表示结束，不用处理。
 
 ## 算法及数据结构
 
@@ -197,6 +197,7 @@ int main(int argc, char *argv[]) {
 
 如果使用暴力搜索，此题几乎不可能在正常时间内求解。使用Warnsdorff's rule 进行启发式搜索则可以在（相对于边数的）线性时间内求解 [3]。在 sicily 上耗时 0.0s，内存 308KB。
 
+## 参考文献
 1. Conrad, A.; Hindrichs, T.; Morsy, H. &amp; Wegener, I. (1994). "Solution of the Knight's Hamiltonian Path Problem on Chessboards". Discrete Applied Mathematics 50 (2): 125–134. doi:10.1016/0166-218X(92)00170-Q.
 2. Parberry, Ian (1997). "An Efficient Algorithm for the Knight's Tour Problem". Discrete Applied Mathematics 73: 251–260. doi:10.1016/S0166-218X(96)00010-8.
 3. Pohl, Ira (July 1967). "A method for finding Hamilton paths and Knight's tours". Communications of the ACM 10 (7): 446–449. doi:10.1145/363427.363463.
